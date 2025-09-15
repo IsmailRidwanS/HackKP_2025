@@ -4,11 +4,11 @@ from rembg import remove, new_session
 from PIL import Image
 import os
 
-# --- User Input ---
+# --- Configuration ---
 image_path = input("Enter the path to the image you want to blur: ").strip()
-output_dir = input("Enter the folder to save the blurred image (default: output_perfect): ").strip()
-if not output_dir:
-    output_dir = "output_perfect"
+# Fixed output directory as requested
+output_dir = "/mnt/ntfs/vscode/hackp_2025/task5_human_blur/output_perfect"
+
 
 # --- Load Image ---
 image_cv = cv2.imread(image_path)
@@ -45,7 +45,9 @@ else:
     final_image = image_cv
 
 # --- Save the Final Image ---
-os.makedirs(output_dir, exist_ok=True)
+# This line creates the target directory if it doesn't already exist.
+os.makedirs(output_dir, exist_ok=True) 
+
 base_name = os.path.basename(image_path)
 name, ext = os.path.splitext(base_name)
 output_path = os.path.join(output_dir, f"{name}_perfect_feathered_blur{ext}")

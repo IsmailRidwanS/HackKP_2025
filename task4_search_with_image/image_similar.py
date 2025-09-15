@@ -34,14 +34,19 @@ def get_embedding(image_path, device="cpu"):
     return embedding
 
 # -------------------------
-# 3. Fixed dataset folder
+# 3. Build paths relative to the script location
 # -------------------------
-dataset_path = "dataset"  # fixed dataset folder
+# Get the directory where this script is located
+script_dir = os.path.dirname(os.path.abspath(__file__))
+
+# The dataset folder is expected to be in the same directory as the script
+dataset_path = os.path.join(script_dir, "dataset")
 
 if not os.path.isdir(dataset_path):
-    raise ValueError(f"Dataset folder '{dataset_path}' does not exist!")
+    raise ValueError(f"Dataset folder '{dataset_path}' does not exist! Make sure it's in the same folder as the script.")
 
 # Build database embeddings once
+print(f"Building embeddings from images in '{dataset_path}'...")
 database = {}
 for file in os.listdir(dataset_path):
     if file.lower().endswith((".jpg", ".jpeg", ".png")):
@@ -50,6 +55,7 @@ for file in os.listdir(dataset_path):
 
 if not database:
     raise ValueError("No images found in dataset folder!")
+print("...Database built successfully.")
 
 # -------------------------
 # 4. Dynamic query input

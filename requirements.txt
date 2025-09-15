@@ -13,9 +13,14 @@ opencv-python>=4.8
 Pillow>=10.0
 albumentations>=1.3   # optional for advanced augmentations
 
+# Background removal
+rembg==2.0.67       # compatible with Python 3.11
+onnxruntime>=1.15.0 # required by rembg
+# onnxruntime-gpu>=1.15.0  # uncomment if using GPU
+
 # Utilities
 tqdm>=4.66
+matplotlib>=3.7.2
 
-# Optional for GPU usage
-# cudatoolkit>=12.2  # only if using CUDA with PyTorch
-seaborn
+# Visualization
+seaborn>=0.12

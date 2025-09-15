@@ -84,7 +84,18 @@ Below are the specific instructions to run each task from the root directory of 
     ```bash
     python task5_human_blur/image_blur.py
     ```
+    Task 7: Exact Object Search
+        Description: Finds a specific object within a directory of images using a query image and saves visual proof of any matches to an output folder.
+
+        Dataset: A query image provided by the user (e.g., query_image.jpg) and a dataset folder of images to search through (e.g., raw_dataset/).
+
+        Command:
+            ```bash
+                python search_tool.py
+            ```
+
 ---
+
 
 ## 🛠️ External Libraries & Models
 

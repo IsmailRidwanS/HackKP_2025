@@ -160,11 +160,19 @@ def main():
         summary, raw_exif = analyze_image_metadata(filepath)
         all_summaries.append(summary)
         all_raw_data.append({"file": os.path.basename(filepath), "exif": raw_exif})
-
-    # Save results to hardcoded filenames
-    summary_output_file = "metadata_summary.json"
-    raw_output_file = "metadata_raw.json"
-
+        
+    # --- Dynamically create output directory and define output file paths ---
+    # Get the directory where the script is located
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    output_dir = os.path.join(script_dir, "metadata_output")
+    
+    # Create the output directory if it doesn't exist
+    os.makedirs(output_dir, exist_ok=True)
+    
+    # Define file paths inside the new directory
+    summary_output_file = os.path.join(output_dir, "metadata_summary.json")
+    raw_output_file = os.path.join(output_dir, "metadata_raw.json")
+    
     with open(summary_output_file, "w", encoding="utf-8") as f:
         json.dump(all_summaries, f, indent=4, ensure_ascii=False)
 
@@ -172,8 +180,9 @@ def main():
         json.dump(all_raw_data, f, indent=4, ensure_ascii=False)
 
     print("\n✅ Analysis Complete!")
-    print(f"- A clean summary has been saved to {summary_output_file}")
-    print(f"- The full, raw metadata has been saved to {raw_output_file}")
+    print(f"- Output has been saved in the '{output_dir}' folder.")
+    print(f"  - Summary: {os.path.basename(summary_output_file)}")
+    print(f"  - Raw Data: {os.path.basename(raw_output_file)}")
 
 if __name__ == "__main__":
     main()

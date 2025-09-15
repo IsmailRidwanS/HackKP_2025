@@ -4,10 +4,17 @@ from PIL import Image
 import matplotlib.pyplot as plt
 
 # -------------------------
-# 1. Paths
+# 1. Auto-detect dataset folder
 # -------------------------
-dataset_path = "raw_dataset"  # folder containing your images
-labels_csv = "labels.csv"     # your CSV file
+script_dir = os.path.dirname(os.path.abspath(__file__))
+
+dataset_path = os.path.join(script_dir, "dataset")  # folder should be named 'dataset' in same dir
+if not os.path.isdir(dataset_path):
+    raise FileNotFoundError(f"'dataset' folder not found in {script_dir}")
+
+labels_csv = os.path.join(script_dir, "labels.csv")
+if not os.path.isfile(labels_csv):
+    raise FileNotFoundError(f"'labels.csv' not found in {script_dir}")
 
 # -------------------------
 # 2. Load CSV
@@ -15,14 +22,17 @@ labels_csv = "labels.csv"     # your CSV file
 df = pd.read_csv(labels_csv)
 
 # -------------------------
-# 3. User input for search keyword
+# 3. Prepare lowercase mapping of available files
 # -------------------------
-query = input(
-    "Enter search keyword (e.g., cane, cavallo, elefante, farfalla, gallina): "
-).strip().lower()
+available_files = {f.lower(): f for f in os.listdir(dataset_path)}
 
 # -------------------------
-# 4. Find matching images
+# 4. User input for search keyword
+# -------------------------
+query = input("Enter search keyword (e.g., cane, cavallo, elefante, farfalla, gallina): ").strip().lower()
+
+# -------------------------
+# 5. Find matching images in CSV
 # -------------------------
 matches = df[df['label'].str.lower() == query]['filename'].tolist()
 
@@ -32,18 +42,28 @@ else:
     print(f"Found {len(matches)} images for '{query}'")
 
     # -------------------------
-    # 5. Display top-5 matches
+    # 6. Display top-5 matches
     # -------------------------
     plt.figure(figsize=(15, 5))
-    for i, fname in enumerate(matches[:5], start=1):
-        img_path = os.path.join(dataset_path, fname)
-        if os.path.isfile(img_path):
+    displayed = 0
+
+    for fname in matches:
+        if displayed >= 5:  # limit to top 5
+            break
+        fname_lower = fname.lower()
+        if fname_lower in available_files:
+            img_path = os.path.join(dataset_path, available_files[fname_lower])
             img = Image.open(img_path)
-            plt.subplot(1, 5, i)
+            plt.subplot(1, 5, displayed + 1)
             plt.imshow(img)
-            plt.title(fname)
+            plt.title(query)
             plt.axis("off")
+            displayed += 1
         else:
-            print(f"Warning: File {img_path} not found!")
-    plt.tight_layout()
-    plt.show()
+            print(f"Warning: File {fname} not found in {dataset_path}!")
+
+    if displayed == 0:
+        print("No images could be displayed due to missing files.")
+    else:
+        plt.tight_layout()
+        plt.show()

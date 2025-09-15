@@ -1,100 +1,72 @@
-import torch
-import torch.nn as nn
-import torchvision.transforms as transforms
-from torchvision.models import resnet50, ResNet50_Weights
-from PIL import Image
 import os
-from sklearn.metrics.pairwise import cosine_similarity
+import pandas as pd
+from PIL import Image
 import matplotlib.pyplot as plt
+import difflib
 
 # -------------------------
-# 1. Load Pretrained ResNet50 (remove last layer)
+# 1. Paths
 # -------------------------
-weights = ResNet50_Weights.DEFAULT
-model = resnet50(weights=weights)
-model = nn.Sequential(*list(model.children())[:-1])  # remove classification layer
-model.eval()
+dataset_path = "dataset"  # folder with images
+labels_csv = "labels.csv"  # your CSV file
 
 # -------------------------
-# 2. Image preprocessing
+# 2. Load CSV
 # -------------------------
-transform = transforms.Compose([
-    transforms.Resize((224, 224)),
-    transforms.ToTensor(),
-    transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                         std=[0.229, 0.224, 0.225]),
-])
-
-def get_embedding(image_path, device="cpu"):
-    """Extract 2048-dim embedding for one image"""
-    img = Image.open(image_path).convert("RGB")
-    img = transform(img).unsqueeze(0).to(device)
-    with torch.no_grad():
-        embedding = model(img).squeeze().cpu().numpy()
-    return embedding
+df = pd.read_csv(labels_csv)
 
 # -------------------------
-# 3. Fixed dataset folder
+# 3. Prepare lowercase mapping of available files
 # -------------------------
-dataset_path = "dataset"  # fixed dataset folder
-
-if not os.path.isdir(dataset_path):
-    raise ValueError(f"Dataset folder '{dataset_path}' does not exist!")
-
-# Build database embeddings once
-print("Building dataset embeddings...")
-database = {}
-for file in os.listdir(dataset_path):
-    if file.lower().endswith((".jpg", ".jpeg", ".png")):
-        path = os.path.join(dataset_path, file)
-        database[file] = get_embedding(path)
-
-if not database:
-    raise ValueError("No images found in dataset folder!")
+# {lowercase_filename: actual_filename}
+available_files = {f.lower(): f for f in os.listdir(dataset_path)}
 
 # -------------------------
-# 4. Dynamic query input
+# 4. Fuzzy matching function
 # -------------------------
-query_path = input("Enter query image path: ").strip()
-if not os.path.isfile(query_path):
-    raise ValueError(f"Query image '{query_path}' does not exist!")
-
-query_emb = get_embedding(query_path)
-
-# -------------------------
-# 5. Similarity search (Top-5)
-# -------------------------
-scores = [(fname, float(cosine_similarity([query_emb], [emb])[0][0]))
-          for fname, emb in database.items()]
-
-top5 = sorted(scores, key=lambda x: x[1], reverse=True)[:5]
+def find_closest_file(fname, available_files):
+    fname_lower = fname.lower()
+    matches = difflib.get_close_matches(fname_lower, available_files.keys(), n=1, cutoff=0.6)
+    if matches:
+        return os.path.join(dataset_path, available_files[matches[0]])
+    return None
 
 # -------------------------
-# 6. Print results
+# 5. User input for search keyword
 # -------------------------
-print("\nQuery image:", query_path)
-print("Top 5 most similar images:")
-for fname, sim in top5:
-    print(f"   {fname}  (similarity = {sim:.4f})")
+query = input("Enter search keyword (e.g., cane, cavallo, elefante, farfalla, gallina): ").strip().lower()
 
 # -------------------------
-# 7. Display query + top-5 matches
+# 6. Find matching images
 # -------------------------
-plt.figure(figsize=(15, 6))
+matches = df[df['label'].str.lower() == query]['filename'].tolist()
 
-# Query image
-plt.subplot(1, 6, 1)
-plt.imshow(Image.open(query_path))
-plt.title("Query")
-plt.axis("off")
+if not matches:
+    print(f"No images found for '{query}'")
+else:
+    print(f"Found {len(matches)} images for '{query}'")
 
-# Top-5 similar images
-for i, (fname, sim) in enumerate(top5, start=2):
-    img_path = os.path.join(dataset_path, fname)
-    plt.subplot(1, 6, i)
-    plt.imshow(Image.open(img_path))
-    plt.title(f"Sim {sim:.2f}")
-    plt.axis("off")
+    # -------------------------
+    # 7. Display top-5 matches
+    # -------------------------
+    plt.figure(figsize=(15, 5))
+    displayed = 0
+    for fname in matches:
+        if displayed >= 5:
+            break
+        img_path = find_closest_file(fname, available_files)
+        if img_path and os.path.isfile(img_path):
+            img = Image.open(img_path)
+            plt.subplot(1, 5, displayed + 1)
+            plt.imshow(img)
+            plt.title(os.path.basename(img_path))
+            plt.axis("off")
+            displayed += 1
+        else:
+            print(f"Warning: File for '{fname}' not found in dataset!")
 
-plt.tight_layout()
-plt.show()
+    if displayed > 0:
+        plt.tight_layout()
+        plt.show()
+    else:
+        print("No images could be displayed.")
